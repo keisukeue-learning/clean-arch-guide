@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clean Architecture & DI Guide</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-dim: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --red: #f85149;
+      --orange: #d29922;
+      --purple: #bc8cff;
+      --entities: #f85149;
+      --usecases: #d29922;
+      --adapters: #3fb950;
+      --frameworks: #58a6ff;
+      --di: #bc8cff;
+      --principles: #8b949e;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 { font-size: 20px; font-weight: 600; }
+    header h1 span { color: var(--accent); }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .header-actions button {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .header-actions button:hover { border-color: var(--accent); }
+
+    .stats { font-size: 13px; color: var(--text-dim); }
+    .stats strong { color: var(--accent); }
+
+    /* Progress bar */
+    .progress-bar {
+      height: 3px;
+      background: var(--border);
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--entities), var(--usecases), var(--adapters), var(--frameworks), var(--di));
+      transition: width 0.4s ease;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      padding: 12px 20px;
+      cursor: pointer;
+      color: var(--text-dim);
+      border-bottom: 2px solid transparent;
+      font-size: 14px;
+    }
+
+    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+    .tab .badge {
+      background: var(--border);
+      color: var(--text-dim);
+      padding: 1px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      margin-left: 6px;
+    }
+
+    .tab.active .badge { background: rgba(88,166,255,0.2); color: var(--accent); }
+
+    /* Filter bar */
+    .filter-bar {
+      padding: 12px 24px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s;
+    }
+
+    .filter-chip:hover { border-color: var(--text-dim); }
+
+    .filter-chip.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(88,166,255,0.1);
+    }
+
+    /* Layer Diagram */
+    .diagram-section {
+      padding: 24px;
+      text-align: center;
+    }
+
+    .rings {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ring {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .ring:hover { transform: scale(1.03); }
+
+    .ring-4 { width: 280px; height: 280px; background: rgba(88,166,255,0.08); border: 2px solid var(--frameworks); }
+    .ring-3 { width: 210px; height: 210px; background: rgba(63,185,80,0.08); border: 2px solid var(--adapters); }
+    .ring-2 { width: 150px; height: 150px; background: rgba(210,153,34,0.08); border: 2px solid var(--usecases); }
+    .ring-1 { width: 90px; height: 90px; background: rgba(248,81,73,0.1); border: 2px solid var(--entities); }
+
+    .ring-label {
+      position: absolute;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      pointer-events: none;
+    }
+
+    .ring-4 > .ring-label { top: 10px; color: var(--frameworks); }
+    .ring-3 > .ring-label { top: 8px; color: var(--adapters); }
+    .ring-2 > .ring-label { top: 6px; color: var(--usecases); }
+    .ring-1 > .ring-label { color: var(--entities); font-size: 8px; }
+
+    .ring.highlight { box-shadow: 0 0 15px currentColor; }
+
+    .diagram-note {
+      color: var(--text-dim);
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .diagram-note strong { color: var(--entities); }
+
+    /* Cards */
+    .cards {
+      padding: 16px 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 12px;
+    }
+
+    @media (max-width: 500px) {
+      .cards { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      transition: border-color 0.15s, opacity 0.3s;
+      border-left: 3px solid var(--border);
+    }
+
+    .card:hover { border-color: var(--accent); }
+
+    .card[data-layer="entities"] { border-left-color: var(--entities); }
+    .card[data-layer="usecases"] { border-left-color: var(--usecases); }
+    .card[data-layer="adapters"] { border-left-color: var(--adapters); }
+    .card[data-layer="frameworks"] { border-left-color: var(--frameworks); }
+    .card[data-layer="di"] { border-left-color: var(--di); }
+    .card[data-layer="principle"] { border-left-color: var(--principles); }
+
+    .card-layer {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.5;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.03);
+      border-left: 2px solid var(--border);
+      border-radius: 0 4px 4px 0;
+    }
+
+    .card-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .card-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(188,140,255,0.12);
+      color: var(--purple);
+      border: 1px solid rgba(188,140,255,0.2);
+    }
+
+    .card-relations {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    .card-relations span { color: var(--adapters); }
+
+    .card-example {
+      margin-bottom: 12px;
+    }
+
+    .card-example summary {
+      font-size: 12px;
+      color: var(--accent);
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 4px;
+    }
+
+    .card-example pre {
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: 6px;
+      font-size: 12px;
+      overflow-x: auto;
+      line-height: 1.5;
+      color: #c5c8d4;
+      border: 1px solid var(--border);
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-got-it {
+      padding: 5px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--green);
+      background: rgba(63,185,80,0.15);
+      color: var(--green);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+
+    .btn-got-it:hover { background: rgba(63,185,80,0.3); }
+
+    .btn-later {
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .btn-later:hover { border-color: var(--orange); color: var(--orange); }
+
+    .card.checked {
+      border-color: var(--green);
+      opacity: 0.4;
+      pointer-events: none;
+      transition: opacity 0.4s, border-color 0.3s;
+    }
+
+    .card.skipped {
+      opacity: 0;
+      height: 0;
+      padding: 0;
+      margin: 0;
+      border: none;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    /* Learned list */
+    .learned-list { padding: 16px 24px; }
+
+    .learned-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .learned-item .layer-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .learned-item .layer-badge.entities { background: rgba(248,81,73,0.15); color: var(--entities); }
+    .learned-item .layer-badge.usecases { background: rgba(210,153,34,0.15); color: var(--usecases); }
+    .learned-item .layer-badge.adapters { background: rgba(63,185,80,0.15); color: var(--adapters); }
+    .learned-item .layer-badge.frameworks { background: rgba(88,166,255,0.15); color: var(--frameworks); }
+    .learned-item .layer-badge.di { background: rgba(188,140,255,0.15); color: var(--di); }
+    .learned-item .layer-badge.principle { background: rgba(139,148,158,0.15); color: var(--principles); }
+
+    .btn-unlearn {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+    }
+
+    .btn-unlearn:hover { border-color: var(--red); color: var(--red); }
+
+    /* Quiz */
+    .quiz-section {
+      padding: 24px;
+    }
+
+    .quiz-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .quiz-box h3 { font-size: 14px; margin-bottom: 16px; }
+
+    .quiz-question {
+      font-size: 14px;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+
+    .quiz-opt {
+      padding: 8px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      text-align: left;
+      transition: all 0.15s;
+    }
+
+    .quiz-opt:hover:not(.answered) { border-color: var(--accent); }
+    .quiz-opt.correct { border-color: var(--green); background: rgba(63,185,80,0.1); }
+    .quiz-opt.wrong { border-color: var(--red); background: rgba(248,81,73,0.08); }
+
+    .quiz-explain {
+      font-size: 12px;
+      color: var(--text-dim);
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: 6px;
+      margin-bottom: 12px;
+      display: none;
+      line-height: 1.5;
+    }
+
+    .quiz-explain.show { display: block; }
+
+    .quiz-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .quiz-score { font-size: 13px; color: var(--text-dim); }
+    .quiz-score strong { color: var(--green); }
+
+    .btn-next {
+      padding: 6px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--accent);
+      background: rgba(88,166,255,0.15);
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .btn-next:hover { background: rgba(88,166,255,0.25); }
+
+    /* Empty */
+    .empty {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--text-dim);
+    }
+
+    .empty h2 { margin-bottom: 8px; color: var(--text); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>clean-arch</span> & DI guide</h1>
+    <div class="header-actions">
+      <span class="stats" id="stats"></span>
+      <button onclick="resetProgress()">Reset Progress</button>
+    </div>
+  </header>
+
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="learn" onclick="switchTab('learn')">
+      To Learn <span class="badge" id="learn-count">0</span>
+    </div>
+    <div class="tab" data-tab="learned" onclick="switchTab('learned')">
+      Learned <span class="badge" id="learned-count">0</span>
+    </div>
+    <div class="tab" data-tab="quiz" onclick="switchTab('quiz')">
+      Quiz
+    </div>
+    <div class="tab" data-tab="diagram" onclick="switchTab('diagram')">
+      Map
+    </div>
+  </div>
+
+  <div class="filter-bar" id="filter-bar"></div>
+
+  <!-- Learn view -->
+  <div id="learn-view">
+    <div class="cards" id="cards"></div>
+  </div>
+
+  <!-- Learned view -->
+  <div id="learned-view" style="display:none">
+    <div class="learned-list" id="learned-list"></div>
+  </div>
+
+  <!-- Quiz view -->
+  <div id="quiz-view" style="display:none">
+    <div class="quiz-section">
+      <div class="quiz-box">
+        <h3>Test Your Knowledge</h3>
+        <div class="quiz-question" id="quiz-q"></div>
+        <div class="quiz-options" id="quiz-opts"></div>
+        <div class="quiz-explain" id="quiz-explain"></div>
+        <div class="quiz-footer">
+          <div class="quiz-score" id="quiz-score"></div>
+          <button class="btn-next" id="btn-next" onclick="nextQuestion()">Next Question</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diagram view -->
+  <div id="diagram-view" style="display:none">
+    <div class="diagram-section">
+      <div class="rings">
+        <div class="ring ring-4" onclick="setFilter('frameworks')">
+          <span class="ring-label">Frameworks & Drivers</span>
+          <div class="ring ring-3" onclick="event.stopPropagation(); setFilter('adapters')">
+            <span class="ring-label">Interface Adapters</span>
+            <div class="ring ring-2" onclick="event.stopPropagation(); setFilter('usecases')">
+              <span class="ring-label">Use Cases</span>
+              <div class="ring ring-1" onclick="event.stopPropagation(); setFilter('entities')">
+                <span class="ring-label">Entities</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="diagram-note">
+        Dependencies point <strong>inward</strong> only — click a ring to filter
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script>
+    // State
+    const STORAGE_KEY = "clean-arch-guide-progress";
+    let state = {
+      learned: JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"),
+      filter: "all",
+      currentTab: "learn",
+      quizIndex: 0,
+      quizCorrect: 0,
+      quizTotal: 0,
+      quizAnswered: false,
+      shuffledQuiz: []
+    };
+
+    // Get all items flat
+    function getAllItems() {
+      const items = [];
+      CATEGORIES.forEach(cat => {
+        cat.items.forEach(item => {
+          items.push({ ...item, categoryId: cat.id, categoryTitle: cat.title, categoryColor: cat.color });
+        });
+      });
+      return items;
+    }
+
+    const allItems = getAllItems();
+
+    function getUnlearned() {
+      return allItems.filter(it => !state.learned.includes(itemId(it)));
+    }
+
+    function getLearned() {
+      return allItems.filter(it => state.learned.includes(itemId(it)));
+    }
+
+    function itemId(item) {
+      return item.categoryId + ":" + item.title;
+    }
+
+    function saveProgress() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.learned));
+    }
+
+    // Render
+    function renderAll() {
+      renderFilters();
+      renderCards();
+      renderLearnedList();
+      updateStats();
+      updateProgress();
+    }
+
+    function renderFilters() {
+      const bar = document.getElementById("filter-bar");
+      const cats = [
+        { id: "all", label: "All" },
+        { id: "entities", label: "Entities", color: "var(--entities)" },
+        { id: "usecases", label: "Use Cases", color: "var(--usecases)" },
+        { id: "adapters", label: "Adapters", color: "var(--adapters)" },
+        { id: "frameworks", label: "Frameworks", color: "var(--frameworks)" },
+        { id: "di", label: "DI", color: "var(--di)" },
+        { id: "principles", label: "Principles", color: "var(--principles)" }
+      ];
+
+      bar.innerHTML = cats.map(c =>
+        `<div class="filter-chip ${state.filter === c.id ? 'active' : ''}"
+              onclick="setFilter('${c.id}')"
+              ${c.color ? `style="--chip-color:${c.color}"` : ''}>
+          ${c.label}
+        </div>`
+      ).join("");
+    }
+
+    function setFilter(f) {
+      state.filter = f;
+      if (state.currentTab === "diagram") switchTab("learn");
+      renderAll();
+    }
+
+    function filterItems(items) {
+      if (state.filter === "all") return items;
+      return items.filter(it => it.categoryId === state.filter || it.layer === state.filter);
+    }
+
+    function renderCards() {
+      const container = document.getElementById("cards");
+      const items = filterItems(getUnlearned());
+
+      container.innerHTML = items.map(item => `
+        <div class="card" data-layer="${item.layer}" id="card-${css(itemId(item))}">
+          <div class="card-layer">${item.categoryTitle}</div>
+          <div class="card-title">${esc(item.title)}</div>
+          <div class="card-desc">${esc(item.desc)}</div>
+          <div class="card-tags">
+            ${item.tags.map(t => `<span class="card-tag">${t}</span>`).join("")}
+          </div>
+          ${item.relations ? `<div class="card-relations">${item.relations.map(r => `<span>${r}</span>`).join(" · ")}</div>` : ""}
+          <details class="card-example">
+            <summary>Show code example</summary>
+            <pre>${esc(item.example)}</pre>
+          </details>
+          <div class="card-actions">
+            <button class="btn-got-it" onclick="markLearned('${esc(itemId(item))}')">Got it</button>
+            <button class="btn-later" onclick="skipForNow('${css(itemId(item))}')">Review later</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function markLearned(id) {
+      const el = document.getElementById("card-" + css(id));
+      if (el) el.classList.add("checked");
+
+      setTimeout(() => {
+        if (!state.learned.includes(id)) {
+          state.learned.push(id);
+          saveProgress();
+        }
+        renderAll();
+      }, 400);
+    }
+
+    function skipForNow(cssId) {
+      const el = document.getElementById("card-" + cssId);
+      if (el) {
+        el.classList.add("skipped");
+        setTimeout(() => {
+          el.style.display = "none";
+          setTimeout(() => { el.style.display = ""; el.classList.remove("skipped"); }, 5000);
+        }, 300);
+      }
+    }
+
+    function unlearn(id) {
+      state.learned = state.learned.filter(x => x !== id);
+      saveProgress();
+      renderAll();
+    }
+
+    function renderLearnedList() {
+      const container = document.getElementById("learned-list");
+      const items = filterItems(getLearned());
+
+      document.getElementById("learned-count").textContent = getLearned().length;
+      document.getElementById("learn-count").textContent = getUnlearned().length;
+
+      if (items.length === 0) {
+        container.innerHTML = '<div class="empty"><h2>No items learned yet</h2><p>Read through the cards and tap "Got it" when you understand each concept</p></div>';
+        return;
+      }
+
+      container.innerHTML = items.map(item => `
+        <div class="learned-item">
+          <div>
+            <span class="layer-badge ${item.layer}">${item.categoryId}</span>
+            <span style="margin-left:10px; font-size:14px">${esc(item.title)}</span>
+          </div>
+          <button class="btn-unlearn" onclick="unlearn('${esc(itemId(item))}')">Review again</button>
+        </div>
+      `).join("");
+    }
+
+    function updateStats() {
+      const total = allItems.length;
+      const done = state.learned.length;
+      document.getElementById("stats").innerHTML =
+        `<strong>${done}</strong> / ${total} learned`;
+    }
+
+    function updateProgress() {
+      const pct = allItems.length > 0 ? (state.learned.length / allItems.length) * 100 : 0;
+      document.getElementById("progress-fill").style.width = pct + "%";
+    }
+
+    // Tabs
+    function switchTab(tab) {
+      state.currentTab = tab;
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelector(`[data-tab="${tab}"]`).classList.add("active");
+
+      document.getElementById("learn-view").style.display = tab === "learn" ? "block" : "none";
+      document.getElementById("learned-view").style.display = tab === "learned" ? "block" : "none";
+      document.getElementById("quiz-view").style.display = tab === "quiz" ? "block" : "none";
+      document.getElementById("diagram-view").style.display = tab === "diagram" ? "block" : "none";
+      document.getElementById("filter-bar").style.display = (tab === "learn" || tab === "learned") ? "flex" : "none";
+
+      if (tab === "quiz") initQuiz();
+    }
+
+    // Quiz
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function initQuiz() {
+      state.shuffledQuiz = shuffle(QUIZ);
+      state.quizIndex = 0;
+      state.quizCorrect = 0;
+      state.quizTotal = 0;
+      state.quizAnswered = false;
+      renderQuiz();
+    }
+
+    function renderQuiz() {
+      const q = state.shuffledQuiz[state.quizIndex];
+      if (!q) {
+        document.getElementById("quiz-q").textContent = "All done! You've answered all questions.";
+        document.getElementById("quiz-opts").innerHTML = "";
+        document.getElementById("quiz-explain").className = "quiz-explain";
+        document.getElementById("quiz-score").innerHTML =
+          `Final: <strong>${state.quizCorrect}</strong> / ${state.quizTotal} correct`;
+        document.getElementById("btn-next").textContent = "Restart";
+        document.getElementById("btn-next").onclick = () => { initQuiz(); };
+        return;
+      }
+
+      document.getElementById("quiz-q").textContent = q.q;
+      document.getElementById("quiz-opts").innerHTML = q.opts.map((opt, i) =>
+        `<button class="quiz-opt" onclick="answerQuiz(${i})">${esc(opt)}</button>`
+      ).join("");
+      document.getElementById("quiz-explain").className = "quiz-explain";
+      document.getElementById("quiz-explain").textContent = q.explain;
+      document.getElementById("quiz-score").innerHTML =
+        `Score: <strong>${state.quizCorrect}</strong> / ${state.quizTotal}`;
+      document.getElementById("btn-next").textContent = "Next Question";
+      document.getElementById("btn-next").onclick = nextQuestion;
+      state.quizAnswered = false;
+    }
+
+    function answerQuiz(idx) {
+      if (state.quizAnswered) return;
+      state.quizAnswered = true;
+      state.quizTotal++;
+
+      const q = state.shuffledQuiz[state.quizIndex];
+      const opts = document.querySelectorAll(".quiz-opt");
+
+      opts.forEach((btn, i) => {
+        btn.classList.add("answered");
+        if (i === q.answer) btn.classList.add("correct");
+        if (i === idx && idx !== q.answer) btn.classList.add("wrong");
+      });
+
+      if (idx === q.answer) state.quizCorrect++;
+
+      document.getElementById("quiz-explain").classList.add("show");
+      document.getElementById("quiz-score").innerHTML =
+        `Score: <strong>${state.quizCorrect}</strong> / ${state.quizTotal}`;
+    }
+
+    function nextQuestion() {
+      state.quizIndex++;
+      renderQuiz();
+    }
+
+    function resetProgress() {
+      if (!confirm("Reset all progress? This will mark all items as unlearned.")) return;
+      state.learned = [];
+      saveProgress();
+      renderAll();
+    }
+
+    // Helpers
+    function esc(str) {
+      if (!str) return "";
+      return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    }
+
+    function css(str) {
+      return str.replace(/[^a-zA-Z0-9-]/g, "_");
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "BUTTON" || e.target.tagName === "SELECT") return;
+      const unlearned = getUnlearned();
+      if (!unlearned.length) return;
+
+      if (e.key === "g" || e.key === "G") {
+        markLearned(itemId(unlearned[0]));
+      }
+    });
+
+    // Init
+    renderAll();
+  </script>
+</body>
+</html>

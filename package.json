@@ -1,0 +1,13 @@
+{
+  "name": "clean-arch-guide",
+  "version": "1.0.0",
+  "description": "Interactive knowledge map for Clean Architecture & Dependency Injection",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["clean-architecture", "dependency-injection", "learning"],
+  "author": "keisukeue-learning",
+  "license": "MIT"
+}
