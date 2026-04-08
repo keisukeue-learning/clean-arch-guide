@@ -4,10 +4,13 @@
   "description": "Interactive knowledge map for Clean Architecture & Dependency Injection",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.js"
   },
-  "keywords": ["clean-architecture", "dependency-injection", "learning"],
+  "keywords": [
+    "clean-architecture",
+    "dependency-injection",
+    "learning"
+  ],
   "author": "keisukeue-learning",
   "license": "MIT"
 }
